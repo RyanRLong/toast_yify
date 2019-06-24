@@ -19,11 +19,7 @@ Note: This skeleton file can be safely removed if not needed!
 import argparse
 import logging
 import sys
-from time import sleep
-import toast_yify.gateway.file as db
-
-from bs4 import BeautifulSoup
-from win10toast import ToastNotifier
+import csv
 
 from toast_yify import __version__
 
@@ -34,63 +30,32 @@ __license__ = "mit"
 _logger = logging.getLogger(__name__)
 
 
-def toast():
-    toaster = ToastNotifier()
-    toaster.show_toast("Hello World!!!",
-                       "Python is 10 seconds awsm!",
-                       icon_path="custom.ico",
-                       duration=10)
+FILE_PATH = "./TOAST_YIFY"
 
-    toaster.show_toast("Example two",
-                       "This notification is in it's own thread!",
-                       icon_path=None,
-                       duration=5,
-                       threaded=True)
-    # Wait for threaded notification to finish
-    while toaster.notification_active(): sleep(0.1)
+def fetch_latest_entries():
+    with open(FILE_PATH, newline='') as csv_file:
+        db_reader = csv.reader(csv_file, delimiter=',', quotechar='|')
+        for i in db_reader:
+            yield {
+                'name': i[2],
+                'image_url': i[1],
+                'rating': i[3],
+                'categories': i[0],
+            }
 
+def add_entry(data):
+    row = [data[x] for x in sorted(data.keys())]
+    with open(FILE_PATH, 'w', newline='') as csv_file:
+        db_writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        db_writer.writerow(row)
 
-def parse_entries_from_html(html_doc):
-    soup = BeautifulSoup(html_doc, 'html.parser').find_all('figure')
-    for node in soup:
-        yield {
-            'name': node.img['alt'].replace(" download", ""),
-            'image_url': node.img['src'],
-            'rating': ' '.join([x.string for x in node.find_all('h4')[:1]]),
-            'categories': ', '.join(
-                [x.string for x in node.find_all('h4')[1:]]),
-        }
+def add_entries(data):
+    with open(FILE_PATH, 'w', newline='') as csv_file:
+        db_writer = csv.writer(csv_file, delimiter=',',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        for row in data:
+            db_writer.writerow(row[x] for x in sorted(row.keys()))
 
-
-def get_latest_x_entries_from_persistence(number=10):
-    result = []
-    for x in range(number):
-        result.append(x)
-    return result
-
-
-def get_latest_x_entries_from_site(number=None):
-    default = 10
-    if number is None:
-        number = default
-    result = []
-    for x in range(number):
-        result.append(x)
-    return result
-
-
-def update():
-    """
-    * Connect to VPN
-    1. Pull last X entries from site
-    2. Pull last X entries from persistence
-    3. Get the diff
-        1. If diff write to persistence
-        *. Rotating?
-        2. If diff send toast
-    :return:
-    """
-    return True
 
 
 def parse_args(args):
@@ -142,17 +107,7 @@ def setup_logging(loglevel):
 
 
 def main(args):
-    """Main entry point allowing external calls
-
-    Args:
-      args ([str]): command line parameter list
-    """
-    args = parse_args(args)
-    setup_logging(args.loglevel)
-    _logger.debug("Starting crazy calculations...")
-    print("The {}-th Fibonacci number is {}".format(args.n, fib(args.n)))
-    _logger.info("Script ends here")
-
+    pass
 
 def run():
     """Entry point for console_scripts
@@ -161,5 +116,4 @@ def run():
 
 
 if __name__ == "__main__":
-    toast()
     run()
